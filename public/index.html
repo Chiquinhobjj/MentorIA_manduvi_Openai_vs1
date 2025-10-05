@@ -3,69 +3,481 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mentor Virtual</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <title>MentorIA - Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="app">
-    <header class="topbar">
-      <div class="brand">
-        <div class="avatar">🤝</div>
-        <div class="title">Mentor Virtual</div>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="avatar">🤝</div>
+          <div class="title">MentorIA</div>
+        </div>
       </div>
-    </header>
-
-    <main class="chat">
-      <div id="messages" class="messages"></div>
-
-      <div class="toolbar">
-        <label class="agent-picker">
-          Agente:
-          <select id="agent">
-            <option value="planner" selected>Planner</option>
-            <option value="helper">Helper</option>
-          </select>
-        </label>
+      
+      <div class="nav-menu">
+        <a href="#chat" class="nav-item active" data-section="chat">
+          <span class="icon">💬</span>
+          <span class="label">Chat</span>
+        </a>
+        <a href="#agents" class="nav-item" data-section="agents">
+          <span class="icon">🤖</span>
+          <span class="label">Agentes</span>
+        </a>
+        <a href="#rag" class="nav-item" data-section="rag">
+          <span class="icon">📚</span>
+          <span class="label">RAG</span>
+        </a>
+        <a href="#config" class="nav-item" data-section="config">
+          <span class="icon">⚙️</span>
+          <span class="label">Configuração</span>
+        </a>
+        <a href="#health" class="nav-item" data-section="health">
+          <span class="icon">💚</span>
+          <span class="label">Status</span>
+        </a>
       </div>
+    </nav>
 
-      <div class="quick-replies">
-        <button data-text="Quero criar um plano de estudos">Quero criar um plano de estudos</button>
-        <button data-text="Preciso de ajuda com um conceito específico">Conceito específico</button>
-        <button data-text="Estou buscando novas habilidades para minha carreira">Novas habilidades</button>
-      </div>
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Chat Section -->
+      <section id="chat-section" class="content-section active">
+        <div class="section-header">
+          <h1>Chat com Mentor</h1>
+          <div class="agent-picker">
+            <label>Agente:</label>
+            <select id="agent">
+              <option value="planner" selected>Planner</option>
+              <option value="helper">Helper</option>
+              <option value="tutor">Tutor (RAG)</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="chat-container">
+          <div id="messages" class="messages"></div>
+          
+          <div class="quick-replies">
+            <button data-text="Quero criar um plano de estudos">Quero criar um plano de estudos</button>
+            <button data-text="Preciso de ajuda com um conceito específico">Conceito específico</button>
+            <button data-text="Estou buscando novas habilidades para minha carreira">Novas habilidades</button>
+          </div>
 
-      <form id="form" class="composer">
-        <input id="input" type="text" placeholder="Escreva sua mensagem..." autocomplete="off" />
-        <button id="send" type="submit">Enviar</button>
-      </form>
+          <form id="form" class="composer">
+            <input id="input" type="text" placeholder="Escreva sua mensagem..." autocomplete="off" />
+            <button id="send" type="submit">Enviar</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Agents Section -->
+      <section id="agents-section" class="content-section">
+        <div class="section-header">
+          <h1>Gerenciar Agentes</h1>
+        </div>
+        <div class="agents-grid">
+          <div class="agent-card">
+            <h3>Planner</h3>
+            <p>Cria planos de estudo objetivos e semanais</p>
+            <button onclick="testAgent('planner')">Testar</button>
+          </div>
+          <div class="agent-card">
+            <h3>Helper</h3>
+            <p>Explica conceitos com exemplos simples</p>
+            <button onclick="testAgent('helper')">Testar</button>
+          </div>
+          <div class="agent-card">
+            <h3>Tutor (RAG)</h3>
+            <p>Mentor com acesso ao acervo educacional</p>
+            <button onclick="testAgent('tutor')">Testar</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- RAG Section -->
+      <section id="rag-section" class="content-section">
+        <div class="section-header">
+          <h1>RAG - Busca no Acervo</h1>
+        </div>
+        <div class="rag-tools">
+          <div class="search-box">
+            <input type="text" id="rag-query" placeholder="Buscar no acervo..." />
+            <button onclick="searchRAG()">Buscar</button>
+          </div>
+          <div id="rag-results" class="rag-results"></div>
+        </div>
+      </section>
+
+      <!-- Config Section -->
+      <section id="config-section" class="content-section">
+        <div class="section-header">
+          <h1>Configurações</h1>
+        </div>
+        <div class="config-grid">
+          <div class="config-card">
+            <h3>API Key</h3>
+            <p>Status: <span id="api-status">Verificando...</span></p>
+            <button onclick="checkAPI()">Verificar</button>
+          </div>
+          <div class="config-card">
+            <h3>Ingestão</h3>
+            <p>Reindexar documentos do acervo</p>
+            <button onclick="runIngest()">Executar</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Health Section -->
+      <section id="health-section" class="content-section">
+        <div class="section-header">
+          <h1>Status do Sistema</h1>
+        </div>
+        <div class="health-grid">
+          <div class="health-card">
+            <h3>Servidor</h3>
+            <p id="server-status">Verificando...</p>
+          </div>
+          <div class="health-card">
+            <h3>Embeddings</h3>
+            <p id="embed-status">Verificando...</p>
+          </div>
+          <div class="health-card">
+            <h3>RAG Index</h3>
+            <p id="rag-status">Verificando...</p>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
   <script src="/main.js"></script>
 </body>
 <style>
-  /* Fallback if styles.css fails */
-  body { margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; background: #0b1220; color: #eef2ff; }
-  .app { display: flex; flex-direction: column; height: 100vh; }
-  .topbar { height: 56px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; padding: 0 16px; }
-  .brand { display: flex; gap: 10px; align-items: center; }
-  .avatar { width: 28px; height: 28px; display: grid; place-items: center; background: #1b2540; border-radius: 50%; }
-  .title { font-weight: 600; }
-  .chat { flex: 1; display: grid; grid-template-rows: 1fr auto auto; max-width: 800px; width: 100%; margin: 0 auto; }
-  .messages { padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-  .bubble { max-width: 75%; padding: 12px 14px; border-radius: 12px; line-height: 1.4; white-space: pre-wrap; }
-  .me { align-self: flex-end; background: #2563eb; color: white; border-top-right-radius: 4px; }
-  .bot { align-self: flex-start; background: #111827; color: #e5e7eb; border-top-left-radius: 4px; }
-  .composer { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); }
-  .composer input { background: #0f172a; border: 1px solid #1f2937; border-radius: 10px; color: #e5e7eb; padding: 12px; outline: none; }
-  .composer button { background: #22c55e; color: #0b1220; border: 0; border-radius: 10px; padding: 0 16px; font-weight: 600; cursor: pointer; }
-  .quick-replies { display: flex; gap: 8px; padding: 0 16px 12px; flex-wrap: wrap; }
-  .quick-replies button { background: #111827; color: #cbd5e1; border: 1px solid #1f2937; border-radius: 999px; padding: 8px 12px; cursor: pointer; }
-  .toolbar { display: flex; justify-content: flex-end; padding: 8px 16px; gap: 8px; }
-  .agent-picker select { background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937; border-radius: 8px; padding: 6px 8px; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body { 
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; 
+    background: #0b1220; 
+    color: #eef2ff; 
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .app { 
+    display: flex; 
+    height: 100vh; 
+  }
+  
+  /* Sidebar */
+  .sidebar {
+    width: 240px;
+    background: #111827;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  
+  .brand {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  
+  .avatar {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    background: #1b2540;
+    border-radius: 50%;
+    font-size: 16px;
+  }
+  
+  .title {
+    font-weight: 600;
+    font-size: 18px;
+  }
+  
+  .nav-menu {
+    flex: 1;
+    padding: 20px 0;
+  }
+  
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    color: #9ca3af;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  
+  .nav-item:hover {
+    background: rgba(255,255,255,0.05);
+    color: #e5e7eb;
+  }
+  
+  .nav-item.active {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+    border-right: 3px solid #22c55e;
+  }
+  
+  .nav-item .icon {
+    font-size: 18px;
+  }
+  
+  .nav-item .label {
+    font-weight: 500;
+  }
+  
+  /* Main Content */
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  .content-section {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  .content-section.active {
+    display: flex;
+  }
+  
+  .section-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .section-header h1 {
+    font-size: 24px;
+    font-weight: 600;
+  }
+  
+  .agent-picker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .agent-picker select {
+    background: #0f172a;
+    color: #e5e7eb;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    padding: 8px 12px;
+  }
+  
+  /* Chat */
+  .chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  
+  .messages {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .bubble {
+    max-width: 75%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+  }
+  
+  .me {
+    align-self: flex-end;
+    background: #2563eb;
+    color: white;
+    border-top-right-radius: 4px;
+  }
+  
+  .bot {
+    align-self: flex-start;
+    background: #111827;
+    color: #e5e7eb;
+    border-top-left-radius: 4px;
+  }
+  
+  .quick-replies {
+    display: flex;
+    gap: 8px;
+    padding: 0 20px 16px;
+    flex-wrap: wrap;
+  }
+  
+  .quick-replies button {
+    background: #111827;
+    color: #cbd5e1;
+    border: 1px solid #1f2937;
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .quick-replies button:hover {
+    background: #1f2937;
+  }
+  
+  .composer {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  
+  .composer input {
+    background: #0f172a;
+    border: 1px solid #1f2937;
+    border-radius: 10px;
+    color: #e5e7eb;
+    padding: 12px 16px;
+    outline: none;
+  }
+  
+  .composer button {
+    background: #22c55e;
+    color: #0b1220;
+    border: 0;
+    border-radius: 10px;
+    padding: 0 20px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  
+  /* Grids */
+  .agents-grid, .config-grid, .health-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 24px;
+  }
+  
+  .agent-card, .config-card, .health-card {
+    background: #111827;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  
+  .agent-card h3, .config-card h3, .health-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  
+  .agent-card p, .config-card p, .health-card p {
+    color: #9ca3af;
+    margin-bottom: 16px;
+  }
+  
+  .agent-card button, .config-card button {
+    background: #22c55e;
+    color: #0b1220;
+    border: 0;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  
+  /* RAG Tools */
+  .rag-tools {
+    padding: 24px;
+  }
+  
+  .search-box {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .search-box input {
+    flex: 1;
+    background: #0f172a;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    color: #e5e7eb;
+    padding: 12px 16px;
+    outline: none;
+  }
+  
+  .search-box button {
+    background: #22c55e;
+    color: #0b1220;
+    border: 0;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  
+  .rag-results {
+    background: #111827;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  
+  .rag-result-item {
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 12px 0;
+  }
+  
+  .rag-result-item:last-child {
+    border-bottom: none;
+  }
+  
+  .rag-result-source {
+    font-weight: 600;
+    color: #22c55e;
+    margin-bottom: 4px;
+  }
+  
+  .rag-result-score {
+    color: #9ca3af;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  
+  .rag-result-snippet {
+    color: #e5e7eb;
+    line-height: 1.4;
+  }
 </style>
 </html>
 

@@ -4,5 +4,7 @@ __pycache__/
 *.pyc
 .env
 .env.*
+src/backend/rag/index/
+scripts/*.log
 
 
