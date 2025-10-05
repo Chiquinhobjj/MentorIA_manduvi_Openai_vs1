@@ -1,6 +1,7 @@
 import os
+import json
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -32,22 +33,44 @@ app.add_middleware(
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PUBLIC_DIR = REPO_ROOT / "public"
 PUBLIC_DIR.mkdir(exist_ok=True)
+app.mount("/", StaticFiles(directory=str(PUBLIC_DIR), html=True), name="public")
 
-# Instância global do tracker de progresso
+
 progress_tracker = ProgressTracker()
+
+
+def detect_intent(message: str) -> str:
+    text = (message or "").lower()
+    if any(keyword in text for keyword in ("pratic", "teste", "quiz", "desafio")):
+        return "practice"
+    if "revis" in text or "review" in text:
+        return "review"
+    return "chat"
+
+
+def build_next_task(intent: str, path_label: str) -> str:
+    if intent == "practice":
+        return "Revise o feedback do exercício e peça um novo desafio avançado ou aplique em um caso real."
+    if intent == "review":
+        return "Escolha um tópico com lacuna e solicite um mini-resumo antes de praticar novamente."
+    if path_label == "Diagnóstico":
+        return "Clique em 'Praticar agora' para responder ao diagnóstico inicial do módulo."
+    if path_label == "Fundamentos":
+        return "Peça ao tutor exercícios guiados para consolidar os fundamentos."
+    if path_label == "Prática Guiada":
+        return "Solicite um caso aplicado ou simulação para ganhar +10 XP."
+    return "Combine um desafio prático com uma revisão rápida para manter o ritmo de XP."
 
 
 def get_agent(agent_id: Optional[str]) -> Agent:
     agent = (agent_id or "planner").lower()
-    
+
     if agent in ("tutor", "mentor", "rag"):
         return create_tutor_agent("tutor")
     elif agent in ("planner", "study_planner"):
         return build_planner() if build_planner else Agent(name="Planner", instructions="Crie planos de estudo.")
     elif agent in ("helper", "concepts_helper"):
         return build_helper() if build_helper else Agent(name="Helper", instructions="Explique conceitos.")
-    elif agent in ("assessment", "evaluator", "grader"):
-        return build_assessment_agent()
     else:
         return build_planner() if build_planner else Agent(name="Mentor", instructions="Seja útil e claro.")
 
@@ -56,6 +79,28 @@ class ChatRequest(BaseModel):
     message: str
     sessionId: Optional[str] = "default"
     agentId: Optional[str] = "planner"
+
+
+class GradeRequest(BaseModel):
+    answer: str
+    sessionId: Optional[str] = "default"
+    agentId: Optional[str] = "tutor"
+    question: Optional[str] = None
+    expected: Optional[str] = None
+    rubric: Optional[str] = None
+
+
+def _format_sources(hits: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    sources = []
+    for hit in hits[:3]:
+        source = {
+            "source": hit.get("source"),
+            "snippet": hit.get("snippet"),
+        }
+        if hit.get("score") is not None:
+            source["score"] = hit["score"]
+        sources.append(source)
+    return sources
 
 
 @app.post("/api/chat")
@@ -69,142 +114,50 @@ async def chat(req: ChatRequest):
     # Sessão namespaced por agente e usuário
     session = SQLiteSession(f"{req.agentId or 'planner'}_session_{req.sessionId}")
 
+    intent = detect_intent(req.message)
+    xp_amount = 5 if intent == "practice" else 2
+
     try:
         result = await Runner.run(agent, req.message, session=session)
-        
-        # Award XP por interação (5 XP por mensagem)
-        progress = progress_tracker.award_xp(
-            session_id=req.sessionId,
-            agent_id=req.agentId or "planner",
-            amount=5,
-            reason="Interação com tutor",
-            payload={"message_length": len(req.message)}
-        )
-        
-        return {
-            "reply": result.final_output, 
-            "agent": req.agentId or "planner", 
-            "state": req.sessionId,
-            "xpAwarded": 5,
-            "totalXp": progress.xp,
-            "progress": {
-                "goal": progress.goal,
-                "badges": progress.badges,
-                "path_position": progress.path_position,
-                "gaps": progress.gaps,
-                "recent_events": progress.recent_events,
-            }
-        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-class AssessmentRequest(BaseModel):
-    student_answer: str
-    question: str
-    rubric: Optional[str] = None
-    sessionId: Optional[str] = "default"
-
-
-@app.post("/api/grade")
-async def grade_assessment(req: AssessmentRequest):
-    if not req.student_answer or not req.question:
-        raise HTTPException(status_code=400, detail="Campos 'student_answer' e 'question' são obrigatórios.")
-    if not os.getenv("OPENAI_API_KEY"):
-        raise HTTPException(status_code=500, detail="OPENAI_API_KEY não definido no ambiente.")
-
-    assessment_agent = get_agent("assessment")
-    session = SQLiteSession(f"assessment_session_{req.sessionId}")
-
-    # Construir prompt de avaliação
-    evaluation_prompt = f"""
-Avalie a seguinte resposta do aluno:
-
-PERGUNTA: {req.question}
-
-RESPOSTA DO ALUNO: {req.student_answer}
-"""
-    
-    if req.rubric:
-        evaluation_prompt += f"\nRUBRICA/GABARITO: {req.rubric}"
-    
-    evaluation_prompt += "\n\nForneça a avaliação no formato JSON especificado."
-
+    hits = []
     try:
-        result = await Runner.run(assessment_agent, evaluation_prompt, session=session)
-        
-        # Tentar extrair JSON da resposta
-        import json
-        import re
-        
-        # Procurar por JSON na resposta
-        json_match = re.search(r'\{.*\}', result.final_output, re.DOTALL)
-        if json_match:
-            assessment_data = json.loads(json_match.group())
-        else:
-            # Fallback se não conseguir extrair JSON
-            assessment_data = {
-                "score": 50,
-                "feedback": "Erro ao processar avaliação. Resposta: " + result.final_output[:200],
-                "xp_awarded": 0,
-                "remedial_task": "Revisar a pergunta e tentar novamente.",
-                "gaps": ["Erro de processamento"],
-                "strengths": []
-            }
-        
-        # Award XP baseado na avaliação
-        xp_awarded = assessment_data.get("xp_awarded", 0)
-        gaps = assessment_data.get("gaps", [])
-        
-        if xp_awarded > 0:
-            progress = progress_tracker.award_xp(
-                session_id=req.sessionId,
-                agent_id="assessment",
-                amount=xp_awarded,
-                reason="Avaliação de resposta",
-                payload={
-                    "score": assessment_data.get("score", 0),
-                    "question": req.question[:100]  # Primeiros 100 chars
-                },
-                gaps=gaps
-            )
-        else:
-            progress = progress_tracker.get_progress(req.sessionId, "assessment")
-            if gaps:
-                progress_tracker.update_gaps(req.sessionId, "assessment", gaps)
-        
-        return {
-            "assessment": assessment_data,
-            "raw_response": result.final_output,
-            "sessionId": req.sessionId,
-            "progress": {
-                "goal": progress.goal,
-                "badges": progress.badges,
-                "path_position": progress.path_position,
-                "gaps": progress.gaps,
-                "recent_events": progress.recent_events,
-            }
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro na avaliação: {str(e)}")
+        hits = search_chunks(req.message, k=6, agent_id=req.agentId or "tutor")
+    except Exception:
+        hits = []
 
+    progress = progress_tracker.award_xp(
+        req.sessionId,
+        req.agentId or "planner",
+        xp_amount,
+        reason="chat",
+        payload={"intent": intent, "message": req.message},
+    )
+    progress_tracker.log_event(
+        req.sessionId,
+        req.agentId or "planner",
+        "chat",
+        {"message": req.message, "reply": result.final_output},
+    )
 
-@app.get("/api/progress")
-def get_progress(sessionId: str = "default", agentId: str = "tutor"):
-    """Retorna o progresso atual do aluno."""
-    try:
-        progress = progress_tracker.get_progress(sessionId, agentId)
-        return {
-            "xp": progress.xp,
+    return {
+        "reply": result.final_output,
+        "agent": req.agentId or "planner",
+        "state": req.sessionId,
+        "sources": _format_sources(hits),
+        "xpAwarded": progress.awarded,
+        "totalXp": progress.xp,
+        "badges": progress.badges,
+        "nextTask": build_next_task(intent, progress.path_position.get("label", "")),
+        "progress": {
             "goal": progress.goal,
-            "badges": progress.badges,
-            "path_position": progress.path_position,
+            "pathPosition": progress.path_position,
             "gaps": progress.gaps,
-            "recent_events": progress.recent_events,
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao obter progresso: {str(e)}")
+            "recentEvents": progress.recent_events,
+        },
+    }
 
 
 @app.get("/health")
@@ -234,12 +187,13 @@ def set_api_key(req: ApiKeyRequest):
     # Define para o processo atual
     os.environ["OPENAI_API_KEY"] = req.apiKey
 
-    # Opcional: persiste no .env da raiz
+    # Persiste no .env se solicitado
     if req.persist:
         env_path = REPO_ROOT / ".env"
         lines = []
         if env_path.exists():
             lines = env_path.read_text(encoding="utf-8").splitlines()
+            # Remove linhas existentes da chave
             lines = [ln for ln in lines if not ln.startswith("OPENAI_API_KEY=")]
         lines.append(f"OPENAI_API_KEY={req.apiKey}")
         env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -247,10 +201,8 @@ def set_api_key(req: ApiKeyRequest):
     return {"ok": True}
 
 
-# Endpoints para configuração de agentes
 @app.get("/api/agents")
 def list_agents():
-    """Lista todos os agentes disponíveis com suas configurações."""
     return {
         "agents": {
             agent_id: {
@@ -306,7 +258,89 @@ def update_agent_config_endpoint(req: AgentConfigRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Mount static files AFTER all API routes are defined
-app.mount("/", StaticFiles(directory=str(PUBLIC_DIR), html=True), name="public")
+@app.post("/api/grade")
+async def grade(req: GradeRequest):
+    if not req.answer:
+        raise HTTPException(status_code=400, detail="Campo 'answer' é obrigatório.")
+
+    agent = build_assessment_agent()
+    session = SQLiteSession(f"assessment_{req.sessionId}")
+
+    prompt_parts = ["Avalie a resposta do aluno seguindo a rubrica."]
+    if req.question:
+        prompt_parts.append(f"Pergunta: {req.question}")
+    if req.expected:
+        prompt_parts.append(f"Gabarito ou pontos esperados: {req.expected}")
+    if req.rubric:
+        prompt_parts.append(f"Rubrica adicional: {req.rubric}")
+    prompt_parts.append(f"Resposta do aluno: {req.answer}")
+
+    try:
+        result = await Runner.run(agent, "\n\n".join(prompt_parts), session=session)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    raw_output = result.final_output.strip()
+    if raw_output.startswith("```"):
+        raw_output = raw_output.strip("`").strip()
+        if raw_output.startswith("json"):
+            raw_output = raw_output[4:].strip()
+
+    try:
+        grade_data = json.loads(raw_output)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"Falha ao interpretar avaliação: {exc}")
+
+    xp_awarded = int(grade_data.get("xp_awarded", 0) or 0)
+    gaps = grade_data.get("gaps") if isinstance(grade_data.get("gaps"), list) else None
+
+    progress = progress_tracker.award_xp(
+        req.sessionId,
+        req.agentId or "tutor",
+        xp_awarded,
+        reason="grade",
+        payload={"question": req.question, "score": grade_data.get("score")},
+        gaps=gaps,
+    )
+    progress_tracker.log_event(
+        req.sessionId,
+        req.agentId or "tutor",
+        "grade",
+        {
+            "score": grade_data.get("score"),
+            "feedback": grade_data.get("feedback"),
+        },
+    )
+
+    response = {
+        "score": grade_data.get("score"),
+        "feedback": grade_data.get("feedback"),
+        "xpAwarded": xp_awarded,
+        "remedialTask": grade_data.get("remedial_task"),
+        "badges": progress.badges,
+        "totalXp": progress.xp,
+        "progress": {
+            "goal": progress.goal,
+            "pathPosition": progress.path_position,
+            "gaps": progress.gaps,
+            "recentEvents": progress.recent_events,
+        },
+    }
+
+    if "strengths" in grade_data:
+        response["strengths"] = grade_data["strengths"]
+
+    return response
 
 
+@app.get("/api/progress")
+def get_progress(sessionId: str = "default", agentId: str = "tutor"):
+    progress = progress_tracker.get_progress(sessionId, agentId)
+    return {
+        "xp": progress.xp,
+        "goal": progress.goal,
+        "badges": progress.badges,
+        "pathPosition": progress.path_position,
+        "gaps": progress.gaps,
+        "recentEvents": progress.recent_events,
+    }
