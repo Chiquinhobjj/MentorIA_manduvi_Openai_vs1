@@ -41,6 +41,37 @@ export OPENAI_API_KEY="sk-..."
 
 Esses passos permitem confirmar rapidamente se as alterações desejadas já foram aplicadas no código.
 
+### Como trazer as últimas mudanças para o seu computador
+
+1. **Certifique-se de estar no diretório do projeto**:
+   ```bash
+   cd /caminho/para/MentorIA_manduvi_Openai_vs1
+   ```
+
+2. **Verifique se não há alterações pendentes antes de atualizar**. Isso evita conflitos:
+   ```bash
+   git status
+   ```
+   Caso apareçam arquivos modificados, faça commit/stash ou descarte antes de continuar.
+
+3. **Baixe as atualizações do repositório remoto** (origin/main, por exemplo):
+   ```bash
+   git pull origin main
+   ```
+   Substitua `main` pelo nome da branch que deseja sincronizar.
+
+4. **Se preferir revisar antes de aplicar**, use `git fetch` + `git log`/`git diff`:
+   ```bash
+   git fetch origin
+   git log HEAD..origin/main --oneline
+   git diff HEAD..origin/main
+   ```
+   Depois, aplique com `git merge origin/main` ou `git rebase origin/main`.
+
+5. **Confirme que seu repositório local está atualizado** repetindo os passos da seção anterior (`git status`, `git log`).
+
+Seguindo esse fluxo você baixa e integra rapidamente as mudanças publicadas no GitHub para o seu ambiente local.
+
 ### Executar o backend (exemplo mínimo)
 
 ```bash
