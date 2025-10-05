@@ -15,6 +15,7 @@ from .agents.tutor_agent import create_tutor_agent
 from .agents.assessment_agent import build_assessment_agent
 from .agents.config import get_agent_config, update_agent_config, AGENT_CONFIGS
 from .rag.retriever import search_chunks
+from .progress_tracker import ProgressTracker
 
 
 load_dotenv()
@@ -31,6 +32,9 @@ app.add_middleware(
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PUBLIC_DIR = REPO_ROOT / "public"
 PUBLIC_DIR.mkdir(exist_ok=True)
+
+# Instância global do tracker de progresso
+progress_tracker = ProgressTracker()
 
 
 def get_agent(agent_id: Optional[str]) -> Agent:
@@ -67,9 +71,32 @@ async def chat(req: ChatRequest):
 
     try:
         result = await Runner.run(agent, req.message, session=session)
+        
+        # Award XP por interação (5 XP por mensagem)
+        progress = progress_tracker.award_xp(
+            session_id=req.sessionId,
+            agent_id=req.agentId or "planner",
+            amount=5,
+            reason="Interação com tutor",
+            payload={"message_length": len(req.message)}
+        )
+        
+        return {
+            "reply": result.final_output, 
+            "agent": req.agentId or "planner", 
+            "state": req.sessionId,
+            "xpAwarded": 5,
+            "totalXp": progress.xp,
+            "progress": {
+                "goal": progress.goal,
+                "badges": progress.badges,
+                "path_position": progress.path_position,
+                "gaps": progress.gaps,
+                "recent_events": progress.recent_events,
+            }
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return {"reply": result.final_output, "agent": req.agentId or "planner", "state": req.sessionId}
 
 
 class AssessmentRequest(BaseModel):
@@ -125,14 +152,59 @@ RESPOSTA DO ALUNO: {req.student_answer}
                 "strengths": []
             }
         
+        # Award XP baseado na avaliação
+        xp_awarded = assessment_data.get("xp_awarded", 0)
+        gaps = assessment_data.get("gaps", [])
+        
+        if xp_awarded > 0:
+            progress = progress_tracker.award_xp(
+                session_id=req.sessionId,
+                agent_id="assessment",
+                amount=xp_awarded,
+                reason="Avaliação de resposta",
+                payload={
+                    "score": assessment_data.get("score", 0),
+                    "question": req.question[:100]  # Primeiros 100 chars
+                },
+                gaps=gaps
+            )
+        else:
+            progress = progress_tracker.get_progress(req.sessionId, "assessment")
+            if gaps:
+                progress_tracker.update_gaps(req.sessionId, "assessment", gaps)
+        
         return {
             "assessment": assessment_data,
             "raw_response": result.final_output,
-            "sessionId": req.sessionId
+            "sessionId": req.sessionId,
+            "progress": {
+                "goal": progress.goal,
+                "badges": progress.badges,
+                "path_position": progress.path_position,
+                "gaps": progress.gaps,
+                "recent_events": progress.recent_events,
+            }
         }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro na avaliação: {str(e)}")
+
+
+@app.get("/api/progress")
+def get_progress(sessionId: str = "default", agentId: str = "tutor"):
+    """Retorna o progresso atual do aluno."""
+    try:
+        progress = progress_tracker.get_progress(sessionId, agentId)
+        return {
+            "xp": progress.xp,
+            "goal": progress.goal,
+            "badges": progress.badges,
+            "path_position": progress.path_position,
+            "gaps": progress.gaps,
+            "recent_events": progress.recent_events,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao obter progresso: {str(e)}")
 
 
 @app.get("/health")
