@@ -64,4 +64,131 @@ curl -X POST http://127.0.0.1:8000/api/chat \
 
 Para criar um novo agente, copie um arquivo existente em `src/backend/agents/`, ajuste `instructions`, e adicione um `if` no `get_agent_by_id` do `server.py`.
 
+### API com FastAPI/Uvicorn (opcional)
+
+```bash
+source .venv/bin/activate
+export OPENAI_API_KEY="sk-..."
+uvicorn src.backend.server_fastapi:app --host 127.0.0.1 --port 8000 --reload
+```
+
+A UI está montada em `/` e a API em `POST /api/chat` (campos: `message`, `sessionId`, `agentId`).
+
+## MentorIA – Tutor com RAG (Embeddings + FAISS)
+
+### 1) Pré-requisitos
+
+- Python 3.10+
+- Virtualenv ativo
+- Variável `OPENAI_API_KEY`
+
+### 2) Instalar dependências
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 3) Preparar conteúdo
+
+Coloque seus PDFs/MD/TXT em:
+
+```
+src/backend/rag/data/
+```
+
+### 4) Ingestão (gera embeddings e índice FAISS)
+
+```bash
+source .venv/bin/activate
+export OPENAI_API_KEY="sua_chave"
+python src/backend/rag/ingest.py
+```
+
+Saída esperada:
+`OK! Índice salvo em .../src/backend/rag/index/ (faiss.index + meta.json)`
+
+### 5) Subir a API (FastAPI/Uvicorn)
+
+```bash
+uvicorn src.backend.server_fastapi:app --host 127.0.0.1 --port 8000 --reload
+```
+
+- UI estática: http://127.0.0.1:8000
+- API: `POST http://127.0.0.1:8000/api/chat`
+
+### 6) Testar (Tutor com RAG)
+
+```bash
+curl -s -X POST http://127.0.0.1:8000/api/chat \
+  -H 'Content-Type': 'application/json' \
+  -d '{"message":"Explique frações para 5º ano e proponha 2 exercícios","sessionId":"aluno-1","agentId":"tutor"}' | jq
+```
+
+Se a resposta usar trechos do acervo, o agente deve citar as fontes (ex.: `(Fonte: meu_arquivo.pdf)`).
+
+### Snippet Frontend (fetch)
+
+```ts
+export async function askTutor(message: string, sessionId = "aluno-1") {
+  const r = await fetch("/api/chat", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ message, sessionId, agentId: "tutor" }),
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const data = await r.json();
+  return data.reply as string;
+}
+```
+
+### Checklist rápido
+
+- [ ] `requirements.txt` instalado no mesmo venv
+- [ ] PDFs/MD/TXT em `src/backend/rag/data/`
+- [ ] `python src/backend/rag/ingest.py` rodado sem erros
+- [ ] `uvicorn src.backend.server_fastapi:app --reload` no ar
+- [ ] `POST /api/chat` com `agentId="tutor"` responde e cita `(Fonte: …)`
+
+### Troubleshooting
+
+1) `FileNotFoundError: .../rag/index/faiss.index`
+   - Rode a ingestão primeiro e confirme que há arquivos em `src/backend/rag/data/`.
+
+2) `OPENAI_API_KEY não definido` / `BadRequestError`
+   - Garanta `export OPENAI_API_KEY="..."` no mesmo terminal/venv.
+   - Teste rápido:
+
+```python
+from openai import OpenAI
+print(len(OpenAI().embeddings.create(model="text-embedding-3-large", input=["ok"]).data[0].embedding))
+# deve imprimir 3072
+```
+
+3) `ModuleNotFoundError: faiss`
+   - Use `faiss-cpu` (já está no requirements). Se necessário: `pip install --upgrade pip setuptools wheel`.
+
+4) Resposta sem citações
+   - Pode ser pergunta opinativa. Para perguntas factuais, o prompt do tutor já orienta a chamar `retriever`. Você pode reforçar no `server_fastapi.py` a instrução “se precisar de evidência, chame `retriever`”.
+
+5) Trocar fonte dos dados
+   - Adicione/edite PDFs/MD/TXT em `src/backend/rag/data/` e rode a ingestão novamente.
+
+### Estrutura relevante
+
+```
+src/backend/
+  agents/
+    tutor_agent.py        # Agent (usa a tool retriever)
+  rag/
+    data/                 # seus PDFs/MD/TXT
+    ingest.py             # gera embeddings + índice
+    retriever.py          # busca FAISS + embeddings de query
+    index/
+      faiss.index
+      meta.json
+server_fastapi.py         # endpoint /api/chat (agentId: tutor/planner/helper)
+```
+
 
