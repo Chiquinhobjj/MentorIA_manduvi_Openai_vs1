@@ -179,6 +179,136 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Check API status on load
   checkAPI();
+  
+  // Temperature slider
+  const tempSlider = document.getElementById('config-temperature');
+  const tempValue = document.getElementById('temp-value');
+  if (tempSlider && tempValue) {
+    tempSlider.addEventListener('input', (e) => {
+      tempValue.textContent = e.target.value;
+    });
+  }
 });
+
+// Save API key from UI
+async function saveAPIKey() {
+  const input = document.getElementById('api-key-input');
+  const persist = document.getElementById('persist-key').checked;
+  const key = input.value.trim();
+  if (!key) {
+    alert('Cole sua OPENAI_API_KEY.');
+    return;
+  }
+  try {
+    const res = await fetch('/api/config/api-key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: key, persist })
+    });
+    if (res.ok) {
+      input.value = '';
+      await checkAPI();
+      alert(persist ? 'Chave salva no processo e no .env.' : 'Chave salva no processo.');
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert('Falha ao salvar chave: ' + (err.detail || res.status));
+    }
+  } catch (e) {
+    alert('Erro de conexão ao salvar chave.');
+  }
+}
+
+// Agent Configuration Functions
+let currentAgentConfig = null;
+
+async function loadAgentConfig() {
+  const agentId = document.getElementById('config-agent-select').value;
+  
+  try {
+    const res = await fetch('/api/agents');
+    if (!res.ok) throw new Error('Falha ao carregar agentes');
+    
+    const data = await res.json();
+    const config = data.agents[agentId];
+    
+    if (!config) {
+      alert('Configuração não encontrada para este agente.');
+      return;
+    }
+    
+    // Preencher formulário
+    document.getElementById('config-name').value = config.name || '';
+    document.getElementById('config-model').value = config.model || 'gpt-4o-mini';
+    document.getElementById('config-temperature').value = config.temperature || 0.7;
+    document.getElementById('temp-value').textContent = config.temperature || 0.7;
+    document.getElementById('config-max-tokens').value = config.max_tokens || 2000;
+    document.getElementById('config-embed-model').value = config.embed_model || 'text-embedding-3-large';
+    document.getElementById('config-rag-k').value = config.rag_k || 6;
+    document.getElementById('config-chunk-size').value = config.rag_chunk_size || 800;
+    document.getElementById('config-overlap').value = config.rag_overlap || 150;
+    document.getElementById('config-tools-enabled').checked = config.tools_enabled || false;
+    document.getElementById('config-system-prompt').value = config.system_prompt || '';
+    
+    currentAgentConfig = config;
+    
+  } catch (e) {
+    alert('Erro ao carregar configuração: ' + e.message);
+  }
+}
+
+async function saveAgentConfig() {
+  const agentId = document.getElementById('config-agent-select').value;
+  
+  const config = {
+    agent_id: agentId,
+    name: document.getElementById('config-name').value,
+    model: document.getElementById('config-model').value,
+    temperature: parseFloat(document.getElementById('config-temperature').value),
+    max_tokens: parseInt(document.getElementById('config-max-tokens').value),
+    embed_model: document.getElementById('config-embed-model').value,
+    rag_k: parseInt(document.getElementById('config-rag-k').value),
+    rag_chunk_size: parseInt(document.getElementById('config-chunk-size').value),
+    rag_overlap: parseInt(document.getElementById('config-overlap').value),
+    tools_enabled: document.getElementById('config-tools-enabled').checked,
+    system_prompt: document.getElementById('config-system-prompt').value,
+  };
+  
+  try {
+    const res = await fetch('/api/agents/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    });
+    
+    if (res.ok) {
+      alert('Configuração salva com sucesso!');
+      currentAgentConfig = config;
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert('Falha ao salvar: ' + (err.detail || res.status));
+    }
+  } catch (e) {
+    alert('Erro ao salvar configuração: ' + e.message);
+  }
+}
+
+function resetAgentConfig() {
+  if (currentAgentConfig) {
+    loadAgentConfig();
+  } else {
+    // Reset para valores padrão
+    document.getElementById('config-name').value = '';
+    document.getElementById('config-model').value = 'gpt-4o-mini';
+    document.getElementById('config-temperature').value = 0.7;
+    document.getElementById('temp-value').textContent = '0.7';
+    document.getElementById('config-max-tokens').value = 2000;
+    document.getElementById('config-embed-model').value = 'text-embedding-3-large';
+    document.getElementById('config-rag-k').value = 6;
+    document.getElementById('config-chunk-size').value = 800;
+    document.getElementById('config-overlap').value = 150;
+    document.getElementById('config-tools-enabled').checked = true;
+    document.getElementById('config-system-prompt').value = '';
+  }
+}
 
 

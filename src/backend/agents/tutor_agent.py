@@ -2,58 +2,68 @@ from typing import Any, Dict
 import json
 
 from agents import Agent
-from backend.rag.retriever import search_chunks
+from ..rag.retriever import search_chunks
+from .config import get_agent_config
 
 
-def retriever(query: str) -> str:
-    """
-    Busca trechos no acervo educacional local (FAISS).
-    Retorna JSON string com estrutura: {"hits":[{"source": str, "score": float, "snippet": str}, ...]}
-    """
-    hits = search_chunks(query, k=6)
-    return json.dumps({"hits": hits}, ensure_ascii=False)
+def create_retriever_tool(agent_id: str = "tutor"):
+    """Cria uma ferramenta retriever específica para um agente."""
+    config = get_agent_config(agent_id)
+    
+    def retriever(query: str) -> str:
+        """
+        Busca trechos no acervo educacional local (FAISS).
+        Retorna JSON string com estrutura: {"hits":[{"source": str, "score": float, "snippet": str}, ...]}
+        """
+        hits = search_chunks(
+            query, 
+            k=config.rag_k, 
+            agent_id=agent_id,
+            filters=config.filters
+        )
+        return json.dumps({"hits": hits}, ensure_ascii=False)
+    
+    return retriever
 
 
-SYSTEM_PROMPT = """
-Você é o Tutor Manduvi (Socrático e alinhado à BNCC).
-- Faça 1–2 perguntas diagnósticas antes de explicar.
-- Explique simples, depois aprofunde com exemplos.
-- Quando precisar de fatos do acervo, chame a ferramenta `retriever`.
-- Sempre cite as fontes assim: (Fonte: {source})
-- Termine com 2–3 exercícios práticos.
-- Se faltar evidência no acervo, diga explicitamente e proponha próximo passo.
-- Responda em PT-BR, tom acolhedor e objetivo.
-"""
+def create_tutor_agent(agent_id: str = "tutor") -> Agent:
+    """Cria um agente tutor com configurações específicas."""
+    config = get_agent_config(agent_id)
+    
+    retriever_tool = create_retriever_tool(agent_id)
+    
+    try:
+        return Agent(
+            name=config.name,
+            instructions=config.system_prompt,
+            tools=[retriever_tool] if config.tools_enabled else [],
+        )
+    except TypeError:
+        def retriever_tool_wrapper(inputs: Dict[str, Any]) -> str:
+            q = inputs.get("query", "")
+            return retriever_tool(q)
 
-
-try:
-    tutor_agent = Agent(
-        name="Tutor Manduvi",
-        instructions=SYSTEM_PROMPT,
-        tools=[retriever],
-    )
-except TypeError:
-    def retriever_tool(inputs: Dict[str, Any]) -> str:
-        q = inputs.get("query", "")
-        return retriever(q)
-
-    tool_spec = {
-        "name": "retriever",
-        "description": "Busca trechos relevantes no acervo educacional local (FAISS).",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "query": {"type": "string", "description": "Pergunta ou tópico a pesquisar."}
+        tool_spec = {
+            "name": "retriever",
+            "description": "Busca trechos relevantes no acervo educacional local (FAISS).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Pergunta ou tópico a pesquisar."}
+                },
+                "required": ["query"],
             },
-            "required": ["query"],
-        },
-        "func": retriever_tool,
-    }
+            "func": retriever_tool_wrapper,
+        }
 
-    tutor_agent = Agent(
-        name="Tutor Manduvi",
-        instructions=SYSTEM_PROMPT,
-        tools=[tool_spec],
-    )
+        return Agent(
+            name=config.name,
+            instructions=config.system_prompt,
+            tools=[tool_spec] if config.tools_enabled else [],
+        )
+
+
+# Agente padrão
+tutor_agent = create_tutor_agent("tutor")
 
 

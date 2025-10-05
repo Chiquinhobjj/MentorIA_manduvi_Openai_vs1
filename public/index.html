@@ -28,6 +28,10 @@
           <span class="icon">🤖</span>
           <span class="label">Agentes</span>
         </a>
+        <a href="#agent-config" class="nav-item" data-section="agent-config">
+          <span class="icon">⚙️</span>
+          <span class="label">Config Agentes</span>
+        </a>
         <a href="#rag" class="nav-item" data-section="rag">
           <span class="icon">📚</span>
           <span class="label">RAG</span>
@@ -99,6 +103,88 @@
         </div>
       </section>
 
+      <!-- Agent Config Section -->
+      <section id="agent-config-section" class="content-section">
+        <div class="section-header">
+          <h1>Configuração de Agentes</h1>
+        </div>
+        <div class="agent-config-container">
+          <div class="agent-selector">
+            <label>Selecionar Agente:</label>
+            <select id="config-agent-select">
+              <option value="tutor">Tutor</option>
+              <option value="planner">Planner</option>
+              <option value="helper">Helper</option>
+            </select>
+            <button onclick="loadAgentConfig()">Carregar Config</button>
+          </div>
+          
+          <div id="agent-config-form" class="config-form">
+            <div class="config-group">
+              <h3>Configurações Básicas</h3>
+              <div class="form-row">
+                <label>Nome:</label>
+                <input type="text" id="config-name" />
+              </div>
+              <div class="form-row">
+                <label>Modelo:</label>
+                <select id="config-model">
+                  <option value="gpt-4o-mini">GPT-4o Mini</option>
+                  <option value="gpt-4o">GPT-4o</option>
+                  <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label>Temperatura:</label>
+                <input type="range" id="config-temperature" min="0" max="2" step="0.1" value="0.7" />
+                <span id="temp-value">0.7</span>
+              </div>
+              <div class="form-row">
+                <label>Max Tokens:</label>
+                <input type="number" id="config-max-tokens" min="100" max="4000" value="2000" />
+              </div>
+            </div>
+            
+            <div class="config-group">
+              <h3>Configurações RAG</h3>
+              <div class="form-row">
+                <label>Embedding Model:</label>
+                <select id="config-embed-model">
+                  <option value="text-embedding-3-large">text-embedding-3-large</option>
+                  <option value="text-embedding-3-small">text-embedding-3-small</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label>Top-K Results:</label>
+                <input type="number" id="config-rag-k" min="1" max="20" value="6" />
+              </div>
+              <div class="form-row">
+                <label>Chunk Size:</label>
+                <input type="number" id="config-chunk-size" min="100" max="2000" value="800" />
+              </div>
+              <div class="form-row">
+                <label>Overlap:</label>
+                <input type="number" id="config-overlap" min="0" max="500" value="150" />
+              </div>
+              <div class="form-row">
+                <label>Tools Enabled:</label>
+                <input type="checkbox" id="config-tools-enabled" />
+              </div>
+            </div>
+            
+            <div class="config-group">
+              <h3>System Prompt</h3>
+              <textarea id="config-system-prompt" rows="8" placeholder="Digite o prompt do sistema..."></textarea>
+            </div>
+            
+            <div class="config-actions">
+              <button onclick="saveAgentConfig()" class="save-btn">Salvar Configuração</button>
+              <button onclick="resetAgentConfig()" class="reset-btn">Resetar</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- RAG Section -->
       <section id="rag-section" class="content-section">
         <div class="section-header">
@@ -122,7 +208,17 @@
           <div class="config-card">
             <h3>API Key</h3>
             <p>Status: <span id="api-status">Verificando...</span></p>
-            <button onclick="checkAPI()">Verificar</button>
+            <div style="display:flex; gap:8px; margin:10px 0;">
+              <input id="api-key-input" type="password" placeholder="Cole sua OPENAI_API_KEY" style="flex:1; background:#0f172a; border:1px solid #1f2937; border-radius:8px; color:#e5e7eb; padding:8px 12px;" />
+              <label style="display:flex; align-items:center; gap:6px;">
+                <input id="persist-key" type="checkbox" />
+                Persistir (.env)
+              </label>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button onclick="saveAPIKey()">Salvar chave</button>
+              <button onclick="checkAPI()">Verificar</button>
+            </div>
           </div>
           <div class="config-card">
             <h3>Ingestão</h3>
@@ -477,6 +573,128 @@
   .rag-result-snippet {
     color: #e5e7eb;
     line-height: 1.4;
+  }
+  
+  /* Agent Config Styles */
+  .agent-config-container {
+    padding: 24px;
+  }
+  
+  .agent-selector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #111827;
+    border-radius: 8px;
+  }
+  
+  .agent-selector select {
+    background: #0f172a;
+    color: #e5e7eb;
+    border: 1px solid #1f2937;
+    border-radius: 6px;
+    padding: 8px 12px;
+  }
+  
+  .agent-selector button {
+    background: #22c55e;
+    color: #0b1220;
+    border: 0;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  
+  .config-form {
+    display: grid;
+    gap: 24px;
+  }
+  
+  .config-group {
+    background: #111827;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  
+  .config-group h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: #22c55e;
+  }
+  
+  .form-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .form-row label {
+    min-width: 120px;
+    font-weight: 500;
+  }
+  
+  .form-row input, .form-row select, .form-row textarea {
+    flex: 1;
+    background: #0f172a;
+    border: 1px solid #1f2937;
+    border-radius: 6px;
+    color: #e5e7eb;
+    padding: 8px 12px;
+  }
+  
+  .form-row textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+  
+  .form-row input[type="range"] {
+    flex: 2;
+  }
+  
+  .form-row input[type="checkbox"] {
+    flex: none;
+    width: 18px;
+    height: 18px;
+  }
+  
+  #temp-value {
+    min-width: 40px;
+    text-align: center;
+    font-weight: 600;
+    color: #22c55e;
+  }
+  
+  .config-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+  }
+  
+  .save-btn {
+    background: #22c55e;
+    color: #0b1220;
+    border: 0;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  
+  .reset-btn {
+    background: #ef4444;
+    color: white;
+    border: 0;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-weight: 600;
+    cursor: pointer;
   }
 </style>
 </html>
