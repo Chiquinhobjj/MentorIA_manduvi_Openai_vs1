@@ -179,6 +179,27 @@ export async function askTutor(message: string, sessionId = "aluno-1") {
 - [ ] `uvicorn src.backend.server_fastapi:app --reload` no ar
 - [ ] `POST /api/chat` com `agentId="tutor"` responde e cita `(Fonte: …)`
 
+### Como atualizar o código no GitHub
+
+1. **Clonar e criar branch**
+   ```bash
+   git clone git@github.com:<seu-usuario>/<seu-fork>.git
+   cd <seu-fork>
+   git checkout -b feat/minha-atualizacao
+   ```
+2. **Editar os arquivos localmente** (VS Code, vim etc.) ou, se preferir, use o editor web do GitHub (`.` no repositório ou "Edit this file").
+3. **Testar e validar** no seu ambiente (`pytest`, `uvicorn`, ingestão etc.).
+4. **Commitar e enviar**
+   ```bash
+   git status            # conferir mudanças
+   git add .             # selecionar arquivos (ou git add <arquivo>)
+   git commit -m "feat: descreva sua mudança"
+   git push origin feat/minha-atualizacao
+   ```
+5. **Abrir Pull Request** no GitHub comparando sua branch com `main`.
+
+> Dica: se precisar aplicar apenas um ajuste rápido, o botão **Edit** no GitHub permite alterar o arquivo, adicionar uma mensagem de commit e criar PR direto no navegador.
+
 ### Troubleshooting
 
 1) `FileNotFoundError: .../rag/index/faiss.index`
