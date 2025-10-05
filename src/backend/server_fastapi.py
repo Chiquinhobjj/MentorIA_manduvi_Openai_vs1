@@ -12,6 +12,7 @@ from agents import Agent, Runner, SQLiteSession
 from .agents.study_planner import build_agent as build_planner
 from .agents.concepts_helper import build_agent as build_helper
 from .agents.tutor_agent import create_tutor_agent
+from .agents.assessment_agent import build_assessment_agent
 from .agents.config import get_agent_config, update_agent_config, AGENT_CONFIGS
 from .rag.retriever import search_chunks
 
@@ -41,6 +42,8 @@ def get_agent(agent_id: Optional[str]) -> Agent:
         return build_planner() if build_planner else Agent(name="Planner", instructions="Crie planos de estudo.")
     elif agent in ("helper", "concepts_helper"):
         return build_helper() if build_helper else Agent(name="Helper", instructions="Explique conceitos.")
+    elif agent in ("assessment", "evaluator", "grader"):
+        return build_assessment_agent()
     else:
         return build_planner() if build_planner else Agent(name="Mentor", instructions="Seja útil e claro.")
 
@@ -67,6 +70,69 @@ async def chat(req: ChatRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     return {"reply": result.final_output, "agent": req.agentId or "planner", "state": req.sessionId}
+
+
+class AssessmentRequest(BaseModel):
+    student_answer: str
+    question: str
+    rubric: Optional[str] = None
+    sessionId: Optional[str] = "default"
+
+
+@app.post("/api/grade")
+async def grade_assessment(req: AssessmentRequest):
+    if not req.student_answer or not req.question:
+        raise HTTPException(status_code=400, detail="Campos 'student_answer' e 'question' são obrigatórios.")
+    if not os.getenv("OPENAI_API_KEY"):
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY não definido no ambiente.")
+
+    assessment_agent = get_agent("assessment")
+    session = SQLiteSession(f"assessment_session_{req.sessionId}")
+
+    # Construir prompt de avaliação
+    evaluation_prompt = f"""
+Avalie a seguinte resposta do aluno:
+
+PERGUNTA: {req.question}
+
+RESPOSTA DO ALUNO: {req.student_answer}
+"""
+    
+    if req.rubric:
+        evaluation_prompt += f"\nRUBRICA/GABARITO: {req.rubric}"
+    
+    evaluation_prompt += "\n\nForneça a avaliação no formato JSON especificado."
+
+    try:
+        result = await Runner.run(assessment_agent, evaluation_prompt, session=session)
+        
+        # Tentar extrair JSON da resposta
+        import json
+        import re
+        
+        # Procurar por JSON na resposta
+        json_match = re.search(r'\{.*\}', result.final_output, re.DOTALL)
+        if json_match:
+            assessment_data = json.loads(json_match.group())
+        else:
+            # Fallback se não conseguir extrair JSON
+            assessment_data = {
+                "score": 50,
+                "feedback": "Erro ao processar avaliação. Resposta: " + result.final_output[:200],
+                "xp_awarded": 0,
+                "remedial_task": "Revisar a pergunta e tentar novamente.",
+                "gaps": ["Erro de processamento"],
+                "strengths": []
+            }
+        
+        return {
+            "assessment": assessment_data,
+            "raw_response": result.final_output,
+            "sessionId": req.sessionId
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro na avaliação: {str(e)}")
 
 
 @app.get("/health")
