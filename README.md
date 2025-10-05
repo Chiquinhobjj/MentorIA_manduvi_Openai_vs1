@@ -16,6 +16,62 @@ Defina a variável de ambiente `OPENAI_API_KEY` antes de executar o backend:
 export OPENAI_API_KEY="sk-..."
 ```
 
+### Como conferir se o código foi atualizado
+
+1. **Verifique o histórico de commits recente**:
+   ```bash
+   git log --oneline -5
+   ```
+   Confirme se o commit esperado aparece na lista com a mensagem correta.
+
+2. **Compare o estado local com o remoto** (útil após `git pull` ou receber PR):
+   ```bash
+   git status
+   git diff
+   ```
+   Se não houver diferenças, o repositório local está sincronizado com o último commit.
+
+3. **Inspecione arquivos específicos** para garantir que as mudanças estão presentes:
+   ```bash
+   git show HEAD:path/para/arquivo.ext
+   ```
+   Substitua `path/para/arquivo.ext` pelo arquivo que deseja conferir.
+
+4. **No GitHub**, abra o arquivo e clique em `History` para ver a lista de commits e selecionar o diff ou versão mais recente.
+
+Esses passos permitem confirmar rapidamente se as alterações desejadas já foram aplicadas no código.
+
+### Como trazer as últimas mudanças para o seu computador
+
+1. **Certifique-se de estar no diretório do projeto**:
+   ```bash
+   cd /caminho/para/MentorIA_manduvi_Openai_vs1
+   ```
+
+2. **Verifique se não há alterações pendentes antes de atualizar**. Isso evita conflitos:
+   ```bash
+   git status
+   ```
+   Caso apareçam arquivos modificados, faça commit/stash ou descarte antes de continuar.
+
+3. **Baixe as atualizações do repositório remoto** (origin/main, por exemplo):
+   ```bash
+   git pull origin main
+   ```
+   Substitua `main` pelo nome da branch que deseja sincronizar.
+
+4. **Se preferir revisar antes de aplicar**, use `git fetch` + `git log`/`git diff`:
+   ```bash
+   git fetch origin
+   git log HEAD..origin/main --oneline
+   git diff HEAD..origin/main
+   ```
+   Depois, aplique com `git merge origin/main` ou `git rebase origin/main`.
+
+5. **Confirme que seu repositório local está atualizado** repetindo os passos da seção anterior (`git status`, `git log`).
+
+Seguindo esse fluxo você baixa e integra rapidamente as mudanças publicadas no GitHub para o seu ambiente local.
+
 ### Executar o backend (exemplo mínimo)
 
 ```bash
@@ -38,31 +94,57 @@ src/
     mentor_agent.py
 ```
 
-### Servidor HTTP + Frontend simples
+### Loop pedagógico Manduvi
 
-```bash
-source .venv/bin/activate
-export OPENAI_API_KEY="sk-..."
-python src/backend/server.py
+O MVP "Mentores Manduvi" implementa o ciclo Diagnosticar → Ensinar → Testar → Feedback → Reforço → XP com memória de sessão e RAG.
+
+#### Endpoints principais
+
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| `POST` | `/api/chat` | Orquestra a conversa com o tutor-persona. Retorna resposta, fontes (RAG), XP ganho e sugestão de próximo passo. |
+| `POST` | `/api/grade` | Envia respostas de exercícios para correção automática (avaliador dedicado). Retorna nota, feedback, XP e tarefa de reforço. |
+| `GET` | `/api/progress` | Consulta XP acumulado, badges, nível atual, lacunas detectadas e eventos recentes. |
+
+Payload mínimo de `/api/chat`:
+
+```json
+{
+  "message": "Praticar agora",
+  "sessionId": "aluno-1",
+  "agentId": "tutor"
+}
 ```
 
-Abra `http://127.0.0.1:8000` no navegador para usar o chat com UI simples. O endpoint de API está em `POST /api/chat` com payload `{ message, sessionId }`.
+Resposta exemplo:
 
-### Criando e selecionando agentes
-
-- Exemplos prontos em `src/backend/agents/`:
-  - `study_planner.py` → agente "planner"
-  - `concepts_helper.py` → agente "helper"
-- No frontend, use o seletor (canto superior) para alternar; o cliente envia `agentId`.
-- Na API, envie `agentId` no body:
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/chat \
-  -H 'Content-Type: application/json' \
-  -d '{"message":"Quero um plano", "sessionId":"abc", "agentId":"planner"}'
+```json
+{
+  "reply": "...",
+  "sources": [{"source": "aula_frontend.pdf", "snippet": "..."}],
+  "xpAwarded": 5,
+  "nextTask": "Clique em 'Praticar agora' para o próximo desafio",
+  "progress": {
+    "goal": 300,
+    "pathPosition": {"level": 1, "label": "Fundamentos", "xpToNext": 45},
+    "gaps": ["Semântica HTML"],
+    "recentEvents": [...]
+  }
+}
 ```
 
-Para criar um novo agente, copie um arquivo existente em `src/backend/agents/`, ajuste `instructions`, e adicione um `if` no `get_agent_by_id` do `server.py`.
+Para `/api/grade`, envie:
+
+```json
+{
+  "answer": "Minha resposta...",
+  "question": "Explique o que é CSS flexbox",
+  "sessionId": "aluno-1",
+  "agentId": "tutor"
+}
+```
+
+O avaliador retorna JSON com `score`, `feedback`, `xpAwarded`, `remedialTask` e atualiza o progresso.
 
 ### API com FastAPI/Uvicorn (opcional)
 
@@ -116,7 +198,9 @@ uvicorn src.backend.server_fastapi:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 - UI estática: http://127.0.0.1:8000
-- API: `POST http://127.0.0.1:8000/api/chat`
+- API principal: `POST http://127.0.0.1:8000/api/chat`
+- Correção automática: `POST http://127.0.0.1:8000/api/grade`
+- Dashboard de XP: `GET http://127.0.0.1:8000/api/progress?sessionId=...&agentId=...`
 
 ### 6) Testar (Tutor com RAG)
 
@@ -150,6 +234,27 @@ export async function askTutor(message: string, sessionId = "aluno-1") {
 - [ ] `python src/backend/rag/ingest.py` rodado sem erros
 - [ ] `uvicorn src.backend.server_fastapi:app --reload` no ar
 - [ ] `POST /api/chat` com `agentId="tutor"` responde e cita `(Fonte: …)`
+
+### Como atualizar o código no GitHub
+
+1. **Clonar e criar branch**
+   ```bash
+   git clone git@github.com:<seu-usuario>/<seu-fork>.git
+   cd <seu-fork>
+   git checkout -b feat/minha-atualizacao
+   ```
+2. **Editar os arquivos localmente** (VS Code, vim etc.) ou, se preferir, use o editor web do GitHub (`.` no repositório ou "Edit this file").
+3. **Testar e validar** no seu ambiente (`pytest`, `uvicorn`, ingestão etc.).
+4. **Commitar e enviar**
+   ```bash
+   git status            # conferir mudanças
+   git add .             # selecionar arquivos (ou git add <arquivo>)
+   git commit -m "feat: descreva sua mudança"
+   git push origin feat/minha-atualizacao
+   ```
+5. **Abrir Pull Request** no GitHub comparando sua branch com `main`.
+
+> Dica: se precisar aplicar apenas um ajuste rápido, o botão **Edit** no GitHub permite alterar o arquivo, adicionar uma mensagem de commit e criar PR direto no navegador.
 
 ### Troubleshooting
 
