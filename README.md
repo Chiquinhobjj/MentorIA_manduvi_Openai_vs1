@@ -16,6 +16,31 @@ Defina a variável de ambiente `OPENAI_API_KEY` antes de executar o backend:
 export OPENAI_API_KEY="sk-..."
 ```
 
+### Como conferir se o código foi atualizado
+
+1. **Verifique o histórico de commits recente**:
+   ```bash
+   git log --oneline -5
+   ```
+   Confirme se o commit esperado aparece na lista com a mensagem correta.
+
+2. **Compare o estado local com o remoto** (útil após `git pull` ou receber PR):
+   ```bash
+   git status
+   git diff
+   ```
+   Se não houver diferenças, o repositório local está sincronizado com o último commit.
+
+3. **Inspecione arquivos específicos** para garantir que as mudanças estão presentes:
+   ```bash
+   git show HEAD:path/para/arquivo.ext
+   ```
+   Substitua `path/para/arquivo.ext` pelo arquivo que deseja conferir.
+
+4. **No GitHub**, abra o arquivo e clique em `History` para ver a lista de commits e selecionar o diff ou versão mais recente.
+
+Esses passos permitem confirmar rapidamente se as alterações desejadas já foram aplicadas no código.
+
 ### Executar o backend (exemplo mínimo)
 
 ```bash
