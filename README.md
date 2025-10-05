@@ -38,31 +38,57 @@ src/
     mentor_agent.py
 ```
 
-### Servidor HTTP + Frontend simples
+### Loop pedagógico Manduvi
 
-```bash
-source .venv/bin/activate
-export OPENAI_API_KEY="sk-..."
-python src/backend/server.py
+O MVP "Mentores Manduvi" implementa o ciclo Diagnosticar → Ensinar → Testar → Feedback → Reforço → XP com memória de sessão e RAG.
+
+#### Endpoints principais
+
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| `POST` | `/api/chat` | Orquestra a conversa com o tutor-persona. Retorna resposta, fontes (RAG), XP ganho e sugestão de próximo passo. |
+| `POST` | `/api/grade` | Envia respostas de exercícios para correção automática (avaliador dedicado). Retorna nota, feedback, XP e tarefa de reforço. |
+| `GET` | `/api/progress` | Consulta XP acumulado, badges, nível atual, lacunas detectadas e eventos recentes. |
+
+Payload mínimo de `/api/chat`:
+
+```json
+{
+  "message": "Praticar agora",
+  "sessionId": "aluno-1",
+  "agentId": "tutor"
+}
 ```
 
-Abra `http://127.0.0.1:8000` no navegador para usar o chat com UI simples. O endpoint de API está em `POST /api/chat` com payload `{ message, sessionId }`.
+Resposta exemplo:
 
-### Criando e selecionando agentes
-
-- Exemplos prontos em `src/backend/agents/`:
-  - `study_planner.py` → agente "planner"
-  - `concepts_helper.py` → agente "helper"
-- No frontend, use o seletor (canto superior) para alternar; o cliente envia `agentId`.
-- Na API, envie `agentId` no body:
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/chat \
-  -H 'Content-Type: application/json' \
-  -d '{"message":"Quero um plano", "sessionId":"abc", "agentId":"planner"}'
+```json
+{
+  "reply": "...",
+  "sources": [{"source": "aula_frontend.pdf", "snippet": "..."}],
+  "xpAwarded": 5,
+  "nextTask": "Clique em 'Praticar agora' para o próximo desafio",
+  "progress": {
+    "goal": 300,
+    "pathPosition": {"level": 1, "label": "Fundamentos", "xpToNext": 45},
+    "gaps": ["Semântica HTML"],
+    "recentEvents": [...]
+  }
+}
 ```
 
-Para criar um novo agente, copie um arquivo existente em `src/backend/agents/`, ajuste `instructions`, e adicione um `if` no `get_agent_by_id` do `server.py`.
+Para `/api/grade`, envie:
+
+```json
+{
+  "answer": "Minha resposta...",
+  "question": "Explique o que é CSS flexbox",
+  "sessionId": "aluno-1",
+  "agentId": "tutor"
+}
+```
+
+O avaliador retorna JSON com `score`, `feedback`, `xpAwarded`, `remedialTask` e atualiza o progresso.
 
 ### API com FastAPI/Uvicorn (opcional)
 
@@ -116,7 +142,9 @@ uvicorn src.backend.server_fastapi:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 - UI estática: http://127.0.0.1:8000
-- API: `POST http://127.0.0.1:8000/api/chat`
+- API principal: `POST http://127.0.0.1:8000/api/chat`
+- Correção automática: `POST http://127.0.0.1:8000/api/grade`
+- Dashboard de XP: `GET http://127.0.0.1:8000/api/progress?sessionId=...&agentId=...`
 
 ### 6) Testar (Tutor com RAG)
 
