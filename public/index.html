@@ -3,236 +3,301 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MentorIA - Dashboard</title>
+  <title>Mentores Manduvi</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <div class="app">
-    <!-- Sidebar -->
     <nav class="sidebar">
       <div class="sidebar-header">
         <div class="brand">
-          <div class="avatar">🤝</div>
-          <div class="title">MentorIA</div>
+          <div class="avatar">🌿</div>
+          <div>
+            <div class="title">Mentores Manduvi</div>
+            <div class="subtitle">Trilhas profissionais</div>
+          </div>
+        </div>
+        <div class="sidebar-progress">
+          <div class="meta">Meta certificação</div>
+          <div class="xp-line">
+            <span id="sidebar-xp">0</span>
+            <span class="goal">/ 300 XP</span>
+          </div>
         </div>
       </div>
-      
       <div class="nav-menu">
+        <a href="#home" class="nav-item" data-section="home">
+          <span class="icon">🎯</span>
+          <span class="label">Tutores</span>
+        </a>
         <a href="#chat" class="nav-item active" data-section="chat">
           <span class="icon">💬</span>
-          <span class="label">Chat</span>
+          <span class="label">Estudar &amp; Praticar</span>
         </a>
-        <a href="#agents" class="nav-item" data-section="agents">
-          <span class="icon">🤖</span>
-          <span class="label">Agentes</span>
+        <a href="#missions" class="nav-item" data-section="missions">
+          <span class="icon">📈</span>
+          <span class="label">Missões &amp; XP</span>
         </a>
-        <a href="#agent-config" class="nav-item" data-section="agent-config">
-          <span class="icon">⚙️</span>
-          <span class="label">Config Agentes</span>
+        <a href="#profile" class="nav-item" data-section="profile">
+          <span class="icon">🧭</span>
+          <span class="label">Perfil</span>
         </a>
-        <a href="#rag" class="nav-item" data-section="rag">
-          <span class="icon">📚</span>
-          <span class="label">RAG</span>
-        </a>
-        <a href="#config" class="nav-item" data-section="config">
-          <span class="icon">⚙️</span>
-          <span class="label">Configuração</span>
-        </a>
-        <a href="#health" class="nav-item" data-section="health">
-          <span class="icon">💚</span>
-          <span class="label">Status</span>
+        <a href="#admin" class="nav-item" data-section="admin">
+          <span class="icon">🛠️</span>
+          <span class="label">Admin</span>
         </a>
       </div>
     </nav>
 
-    <!-- Main Content -->
     <main class="main-content">
-      <!-- Chat Section -->
+      <section id="home-section" class="content-section">
+        <header class="section-header">
+          <h1>Escolha seu Tutor</h1>
+          <p class="section-subtitle">Selecione a persona que guia sua trilha Manduvi e acompanhe metas de certificação.</p>
+        </header>
+        <div class="tutor-grid">
+          <article class="tutor-card" data-agent="tutor">
+            <div class="tutor-head">
+              <div class="persona">💻</div>
+              <div>
+                <h2>Tutor Tech Frontend</h2>
+                <p>HTML, CSS, JS e projetos guiados.</p>
+              </div>
+            </div>
+            <ul class="competencies">
+              <li>Componentes responsivos</li>
+              <li>Boas práticas de UI</li>
+              <li>Projetos semanais</li>
+            </ul>
+            <button class="primary" data-select-agent="tutor">Usar este tutor</button>
+          </article>
+          <article class="tutor-card" data-agent="planner">
+            <div class="tutor-head">
+              <div class="persona">🤝</div>
+              <div>
+                <h2>Tutor Atendimento &amp; Vendas</h2>
+                <p>Scripts, objeções e simulações.</p>
+              </div>
+            </div>
+            <ul class="competencies">
+              <li>Pitch em 3 passos</li>
+              <li>Negociação e rapport</li>
+              <li>Simulações por WhatsApp</li>
+            </ul>
+            <button class="primary" data-select-agent="planner">Usar este tutor</button>
+          </article>
+          <article class="tutor-card" data-agent="helper">
+            <div class="tutor-head">
+              <div class="persona">🩺</div>
+              <div>
+                <h2>Tutor Saúde Comunitária</h2>
+                <p>Protocolos SUS e casos práticos.</p>
+              </div>
+            </div>
+            <ul class="competencies">
+              <li>Classificação de risco</li>
+              <li>Checklists de atendimento</li>
+              <li>Encaminhamentos seguros</li>
+            </ul>
+            <button class="primary" data-select-agent="helper">Usar este tutor</button>
+          </article>
+        </div>
+      </section>
+
       <section id="chat-section" class="content-section active">
-        <div class="section-header">
-          <h1>Chat com Mentor</h1>
+        <header class="section-header">
+          <div>
+            <h1>Estudar &amp; Praticar</h1>
+            <p class="section-subtitle">Diagnosticar → Ensinar → Testar → Feedback → Reforço com XP.</p>
+          </div>
           <div class="agent-picker">
-            <label>Agente:</label>
+            <label for="agent">Tutor ativo:</label>
             <select id="agent">
-              <option value="planner" selected>Planner</option>
-              <option value="helper">Helper</option>
-              <option value="tutor">Tutor (RAG)</option>
+              <option value="tutor" selected>Tutor Tech Frontend</option>
+              <option value="planner">Tutor Atendimento &amp; Vendas</option>
+              <option value="helper">Tutor Saúde Comunitária</option>
             </select>
           </div>
+        </header>
+
+        <div class="learning-header">
+          <div class="progress-card">
+            <div class="goal">Meta de certificação: <span id="xp-goal-top">300 XP</span></div>
+            <div class="xp-bar">
+              <div class="xp-fill" id="xp-fill"></div>
+            </div>
+            <div class="xp-stats"><span id="xp-current">0</span> XP • Nível <span id="xp-level">0</span> (<span id="xp-label">Diagnóstico</span>)</div>
+            <div class="badges-strip" id="badge-strip"></div>
+          </div>
+          <div class="quick-actions">
+            <button id="practice-btn" class="primary">Praticar agora</button>
+            <button id="review-btn" class="ghost">Revisar</button>
+          </div>
         </div>
-        
+
         <div class="chat-container">
           <div id="messages" class="messages"></div>
-          
-          <div class="quick-replies">
-            <button data-text="Quero criar um plano de estudos">Quero criar um plano de estudos</button>
-            <button data-text="Preciso de ajuda com um conceito específico">Conceito específico</button>
-            <button data-text="Estou buscando novas habilidades para minha carreira">Novas habilidades</button>
-          </div>
-
-          <form id="form" class="composer">
-            <input id="input" type="text" placeholder="Escreva sua mensagem..." autocomplete="off" />
-            <button id="send" type="submit">Enviar</button>
-          </form>
-        </div>
-      </section>
-
-      <!-- Agents Section -->
-      <section id="agents-section" class="content-section">
-        <div class="section-header">
-          <h1>Gerenciar Agentes</h1>
-        </div>
-        <div class="agents-grid">
-          <div class="agent-card">
-            <h3>Planner</h3>
-            <p>Cria planos de estudo objetivos e semanais</p>
-            <button onclick="testAgent('planner')">Testar</button>
-          </div>
-          <div class="agent-card">
-            <h3>Helper</h3>
-            <p>Explica conceitos com exemplos simples</p>
-            <button onclick="testAgent('helper')">Testar</button>
-          </div>
-          <div class="agent-card">
-            <h3>Tutor (RAG)</h3>
-            <p>Mentor com acesso ao acervo educacional</p>
-            <button onclick="testAgent('tutor')">Testar</button>
+          <div class="chat-footer">
+            <div class="quick-replies">
+              <button data-text="Quero meu diagnóstico inicial">Diagnóstico</button>
+              <button data-text="Me ensine um tópico com exemplo">Ensinar</button>
+              <button data-text="Praticar agora">Praticar</button>
+            </div>
+            <form id="form" class="composer">
+              <input id="input" type="text" placeholder="Escreva sua mensagem..." autocomplete="off" />
+              <button id="send" type="submit">Enviar</button>
+            </form>
           </div>
         </div>
       </section>
 
-      <!-- Agent Config Section -->
-      <section id="agent-config-section" class="content-section">
-        <div class="section-header">
-          <h1>Configuração de Agentes</h1>
-        </div>
-        <div class="agent-config-container">
-          <div class="agent-selector">
-            <label>Selecionar Agente:</label>
-            <select id="config-agent-select">
-              <option value="tutor">Tutor</option>
-              <option value="planner">Planner</option>
-              <option value="helper">Helper</option>
-            </select>
-            <button onclick="loadAgentConfig()">Carregar Config</button>
+      <section id="missions-section" class="content-section">
+        <header class="section-header">
+          <div>
+            <h1>Missões &amp; XP</h1>
+            <p class="section-subtitle">Veja desafios em andamento, histórico de XP e próximos passos.</p>
           </div>
-          
-          <div id="agent-config-form" class="config-form">
-            <div class="config-group">
-              <h3>Configurações Básicas</h3>
-              <div class="form-row">
-                <label>Nome:</label>
-                <input type="text" id="config-name" />
-              </div>
-              <div class="form-row">
-                <label>Modelo:</label>
-                <select id="config-model">
-                  <option value="gpt-4o-mini">GPT-4o Mini</option>
-                  <option value="gpt-4o">GPT-4o</option>
-                  <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                </select>
-              </div>
-              <div class="form-row">
-                <label>Temperatura:</label>
-                <input type="range" id="config-temperature" min="0" max="2" step="0.1" value="0.7" />
-                <span id="temp-value">0.7</span>
-              </div>
-              <div class="form-row">
-                <label>Max Tokens:</label>
-                <input type="number" id="config-max-tokens" min="100" max="4000" value="2000" />
-              </div>
-            </div>
-            
-            <div class="config-group">
-              <h3>Configurações RAG</h3>
-              <div class="form-row">
-                <label>Embedding Model:</label>
-                <select id="config-embed-model">
-                  <option value="text-embedding-3-large">text-embedding-3-large</option>
-                  <option value="text-embedding-3-small">text-embedding-3-small</option>
-                </select>
-              </div>
-              <div class="form-row">
-                <label>Top-K Results:</label>
-                <input type="number" id="config-rag-k" min="1" max="20" value="6" />
-              </div>
-              <div class="form-row">
-                <label>Chunk Size:</label>
-                <input type="number" id="config-chunk-size" min="100" max="2000" value="800" />
-              </div>
-              <div class="form-row">
-                <label>Overlap:</label>
-                <input type="number" id="config-overlap" min="0" max="500" value="150" />
-              </div>
-              <div class="form-row">
-                <label>Tools Enabled:</label>
-                <input type="checkbox" id="config-tools-enabled" />
-              </div>
-            </div>
-            
-            <div class="config-group">
-              <h3>System Prompt</h3>
-              <textarea id="config-system-prompt" rows="8" placeholder="Digite o prompt do sistema..."></textarea>
-            </div>
-            
-            <div class="config-actions">
-              <button onclick="saveAgentConfig()" class="save-btn">Salvar Configuração</button>
-              <button onclick="resetAgentConfig()" class="reset-btn">Resetar</button>
-            </div>
+        </header>
+        <div class="missions-grid">
+          <div class="missions-card">
+            <h2>Próximas missões</h2>
+            <ul id="mission-list" class="mission-list"></ul>
+          </div>
+          <div class="missions-card">
+            <h2>Histórico de XP</h2>
+            <div id="xp-history" class="xp-history"></div>
           </div>
         </div>
       </section>
 
-      <!-- RAG Section -->
-      <section id="rag-section" class="content-section">
-        <div class="section-header">
-          <h1>RAG - Busca no Acervo</h1>
-        </div>
-        <div class="rag-tools">
-          <div class="search-box">
-            <input type="text" id="rag-query" placeholder="Buscar no acervo..." />
-            <button onclick="searchRAG()">Buscar</button>
+      <section id="profile-section" class="content-section">
+        <header class="section-header">
+          <div>
+            <h1>Perfil do Aprendiz</h1>
+            <p class="section-subtitle">Resumo do progresso, badges e lacunas para seu próximo passo.</p>
           </div>
-          <div id="rag-results" class="rag-results"></div>
+        </header>
+        <div class="profile-grid">
+          <div class="profile-card">
+            <h2>Status</h2>
+            <p><strong>XP total:</strong> <span id="profile-xp">0</span> / <span id="profile-goal">300</span></p>
+            <p><strong>Nível atual:</strong> <span id="profile-level">0</span> — <span id="profile-label">Diagnóstico</span></p>
+            <p><strong>XP para próximo nível:</strong> <span id="profile-next">50</span></p>
+            <div>
+              <h3>Badges</h3>
+              <ul id="profile-badges" class="badge-list"></ul>
+            </div>
+          </div>
+          <div class="profile-card">
+            <h2>Lacunas detectadas</h2>
+            <ul id="profile-gaps" class="gap-list"></ul>
+          </div>
         </div>
       </section>
 
-      <!-- Config Section -->
-      <section id="config-section" class="content-section">
-        <div class="section-header">
-          <h1>Configurações</h1>
-        </div>
-        <div class="config-grid">
+      <section id="admin-section" class="content-section">
+        <header class="section-header">
+          <div>
+            <h1>Admin &amp; Conteúdo</h1>
+            <p class="section-subtitle">Gerencie chave da API, ingestão de conteúdo e configurações dos tutores.</p>
+          </div>
+        </header>
+        <div class="admin-grid">
           <div class="config-card">
-            <h3>API Key</h3>
+            <h2>API Key</h2>
             <p>Status: <span id="api-status">Verificando...</span></p>
-            <div style="display:flex; gap:8px; margin:10px 0;">
-              <input id="api-key-input" type="password" placeholder="Cole sua OPENAI_API_KEY" style="flex:1; background:#0f172a; border:1px solid #1f2937; border-radius:8px; color:#e5e7eb; padding:8px 12px;" />
-              <label style="display:flex; align-items:center; gap:6px;">
+            <div class="api-row">
+              <input id="api-key-input" type="password" placeholder="Cole sua OPENAI_API_KEY" />
+              <label class="persist">
                 <input id="persist-key" type="checkbox" />
                 Persistir (.env)
               </label>
             </div>
-            <div style="display:flex; gap:8px;">
-              <button onclick="saveAPIKey()">Salvar chave</button>
-              <button onclick="checkAPI()">Verificar</button>
+            <div class="button-row">
+              <button onclick="saveAPIKey()" class="primary">Salvar chave</button>
+              <button onclick="checkAPI()" class="ghost">Verificar</button>
             </div>
           </div>
           <div class="config-card">
-            <h3>Ingestão</h3>
-            <p>Reindexar documentos do acervo</p>
-            <button onclick="runIngest()">Executar</button>
+            <h2>Reindexar acervo</h2>
+            <p>Envie PDFs/MD/TXT para <code>src/backend/rag/data</code> e clique abaixo para reprocessar.</p>
+            <button onclick="runIngest()" class="ghost">Executar ingestão</button>
           </div>
         </div>
-      </section>
 
-      <!-- Health Section -->
-      <section id="health-section" class="content-section">
-        <div class="section-header">
-          <h1>Status do Sistema</h1>
+        <div class="admin-grid">
+          <div class="config-card">
+            <h2>RAG - Busca rápida</h2>
+            <div class="rag-search">
+              <input type="text" id="rag-query" placeholder="Buscar no acervo..." />
+              <button onclick="searchRAG()" class="primary">Buscar</button>
+            </div>
+            <div id="rag-results" class="rag-results"></div>
+          </div>
+          <div class="config-card">
+            <h2>Configuração de agentes</h2>
+            <div class="agent-config">
+              <div class="config-row">
+                <label>Agente:</label>
+                <select id="config-agent-select">
+                  <option value="tutor">Tutor</option>
+                  <option value="planner">Planner</option>
+                  <option value="helper">Helper</option>
+                </select>
+                <button onclick="loadAgentConfig()" class="ghost">Carregar</button>
+              </div>
+              <div class="config-row">
+                <label>Nome:</label>
+                <input type="text" id="config-name" />
+              </div>
+              <div class="config-row">
+                <label>Modelo:</label>
+                <input type="text" id="config-model" />
+              </div>
+              <div class="config-row">
+                <label>Temperatura:</label>
+                <input type="range" id="config-temperature" min="0" max="2" step="0.1" value="0.7" />
+                <span id="temp-value">0.7</span>
+              </div>
+              <div class="config-row">
+                <label>Max tokens:</label>
+                <input type="number" id="config-max-tokens" min="100" max="4000" value="2000" />
+              </div>
+              <div class="config-row">
+                <label>Embedding:</label>
+                <input type="text" id="config-embed-model" />
+              </div>
+              <div class="config-row">
+                <label>Top-K:</label>
+                <input type="number" id="config-rag-k" min="1" max="20" value="6" />
+              </div>
+              <div class="config-row">
+                <label>Chunk:</label>
+                <input type="number" id="config-chunk-size" min="100" max="2000" value="800" />
+              </div>
+              <div class="config-row">
+                <label>Overlap:</label>
+                <input type="number" id="config-overlap" min="0" max="500" value="150" />
+              </div>
+              <div class="config-row checkbox">
+                <label>Ferramentas ativas</label>
+                <input type="checkbox" id="config-tools-enabled" />
+              </div>
+              <div class="config-row">
+                <label>Prompt do sistema</label>
+                <textarea id="config-system-prompt" rows="6"></textarea>
+              </div>
+              <div class="button-row">
+                <button onclick="saveAgentConfig()" class="primary">Salvar</button>
+                <button onclick="resetAgentConfig()" class="ghost">Resetar</button>
+              </div>
+            </div>
+          </div>
         </div>
+
         <div class="health-grid">
           <div class="health-card">
             <h3>Servidor</h3>
@@ -253,449 +318,4 @@
 
   <script src="/main.js"></script>
 </body>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  
-  body { 
-    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; 
-    background: #0b1220; 
-    color: #eef2ff; 
-    height: 100vh;
-    overflow: hidden;
-  }
-  
-  .app { 
-    display: flex; 
-    height: 100vh; 
-  }
-  
-  /* Sidebar */
-  .sidebar {
-    width: 240px;
-    background: #111827;
-    border-right: 1px solid rgba(255,255,255,0.08);
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .sidebar-header {
-    padding: 20px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-  }
-  
-  .brand {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-  }
-  
-  .avatar {
-    width: 32px;
-    height: 32px;
-    display: grid;
-    place-items: center;
-    background: #1b2540;
-    border-radius: 50%;
-    font-size: 16px;
-  }
-  
-  .title {
-    font-weight: 600;
-    font-size: 18px;
-  }
-  
-  .nav-menu {
-    flex: 1;
-    padding: 20px 0;
-  }
-  
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 20px;
-    color: #9ca3af;
-    text-decoration: none;
-    transition: all 0.2s;
-  }
-  
-  .nav-item:hover {
-    background: rgba(255,255,255,0.05);
-    color: #e5e7eb;
-  }
-  
-  .nav-item.active {
-    background: rgba(34, 197, 94, 0.1);
-    color: #22c55e;
-    border-right: 3px solid #22c55e;
-  }
-  
-  .nav-item .icon {
-    font-size: 18px;
-  }
-  
-  .nav-item .label {
-    font-weight: 500;
-  }
-  
-  /* Main Content */
-  .main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  
-  .content-section {
-    display: none;
-    flex: 1;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  
-  .content-section.active {
-    display: flex;
-  }
-  
-  .section-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .section-header h1 {
-    font-size: 24px;
-    font-weight: 600;
-  }
-  
-  .agent-picker {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  
-  .agent-picker select {
-    background: #0f172a;
-    color: #e5e7eb;
-    border: 1px solid #1f2937;
-    border-radius: 8px;
-    padding: 8px 12px;
-  }
-  
-  /* Chat */
-  .chat-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    max-width: 800px;
-    width: 100%;
-    margin: 0 auto;
-  }
-  
-  .messages {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .bubble {
-    max-width: 75%;
-    padding: 12px 16px;
-    border-radius: 12px;
-    line-height: 1.4;
-    white-space: pre-wrap;
-  }
-  
-  .me {
-    align-self: flex-end;
-    background: #2563eb;
-    color: white;
-    border-top-right-radius: 4px;
-  }
-  
-  .bot {
-    align-self: flex-start;
-    background: #111827;
-    color: #e5e7eb;
-    border-top-left-radius: 4px;
-  }
-  
-  .quick-replies {
-    display: flex;
-    gap: 8px;
-    padding: 0 20px 16px;
-    flex-wrap: wrap;
-  }
-  
-  .quick-replies button {
-    background: #111827;
-    color: #cbd5e1;
-    border: 1px solid #1f2937;
-    border-radius: 999px;
-    padding: 8px 16px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  
-  .quick-replies button:hover {
-    background: #1f2937;
-  }
-  
-  .composer {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 12px;
-    padding: 16px 20px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-  }
-  
-  .composer input {
-    background: #0f172a;
-    border: 1px solid #1f2937;
-    border-radius: 10px;
-    color: #e5e7eb;
-    padding: 12px 16px;
-    outline: none;
-  }
-  
-  .composer button {
-    background: #22c55e;
-    color: #0b1220;
-    border: 0;
-    border-radius: 10px;
-    padding: 0 20px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  
-  /* Grids */
-  .agents-grid, .config-grid, .health-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    padding: 24px;
-  }
-  
-  .agent-card, .config-card, .health-card {
-    background: #111827;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-    padding: 20px;
-  }
-  
-  .agent-card h3, .config-card h3, .health-card h3 {
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-  
-  .agent-card p, .config-card p, .health-card p {
-    color: #9ca3af;
-    margin-bottom: 16px;
-  }
-  
-  .agent-card button, .config-card button {
-    background: #22c55e;
-    color: #0b1220;
-    border: 0;
-    border-radius: 8px;
-    padding: 8px 16px;
-    font-weight: 500;
-    cursor: pointer;
-  }
-  
-  /* RAG Tools */
-  .rag-tools {
-    padding: 24px;
-  }
-  
-  .search-box {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  
-  .search-box input {
-    flex: 1;
-    background: #0f172a;
-    border: 1px solid #1f2937;
-    border-radius: 8px;
-    color: #e5e7eb;
-    padding: 12px 16px;
-    outline: none;
-  }
-  
-  .search-box button {
-    background: #22c55e;
-    color: #0b1220;
-    border: 0;
-    border-radius: 8px;
-    padding: 12px 20px;
-    font-weight: 500;
-    cursor: pointer;
-  }
-  
-  .rag-results {
-    background: #111827;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-    padding: 20px;
-    max-height: 400px;
-    overflow-y: auto;
-  }
-  
-  .rag-result-item {
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    padding: 12px 0;
-  }
-  
-  .rag-result-item:last-child {
-    border-bottom: none;
-  }
-  
-  .rag-result-source {
-    font-weight: 600;
-    color: #22c55e;
-    margin-bottom: 4px;
-  }
-  
-  .rag-result-score {
-    color: #9ca3af;
-    font-size: 14px;
-    margin-bottom: 8px;
-  }
-  
-  .rag-result-snippet {
-    color: #e5e7eb;
-    line-height: 1.4;
-  }
-  
-  /* Agent Config Styles */
-  .agent-config-container {
-    padding: 24px;
-  }
-  
-  .agent-selector {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 24px;
-    padding: 16px;
-    background: #111827;
-    border-radius: 8px;
-  }
-  
-  .agent-selector select {
-    background: #0f172a;
-    color: #e5e7eb;
-    border: 1px solid #1f2937;
-    border-radius: 6px;
-    padding: 8px 12px;
-  }
-  
-  .agent-selector button {
-    background: #22c55e;
-    color: #0b1220;
-    border: 0;
-    border-radius: 6px;
-    padding: 8px 16px;
-    font-weight: 500;
-    cursor: pointer;
-  }
-  
-  .config-form {
-    display: grid;
-    gap: 24px;
-  }
-  
-  .config-group {
-    background: #111827;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-    padding: 20px;
-  }
-  
-  .config-group h3 {
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 16px;
-    color: #22c55e;
-  }
-  
-  .form-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-  
-  .form-row label {
-    min-width: 120px;
-    font-weight: 500;
-  }
-  
-  .form-row input, .form-row select, .form-row textarea {
-    flex: 1;
-    background: #0f172a;
-    border: 1px solid #1f2937;
-    border-radius: 6px;
-    color: #e5e7eb;
-    padding: 8px 12px;
-  }
-  
-  .form-row textarea {
-    resize: vertical;
-    min-height: 100px;
-  }
-  
-  .form-row input[type="range"] {
-    flex: 2;
-  }
-  
-  .form-row input[type="checkbox"] {
-    flex: none;
-    width: 18px;
-    height: 18px;
-  }
-  
-  #temp-value {
-    min-width: 40px;
-    text-align: center;
-    font-weight: 600;
-    color: #22c55e;
-  }
-  
-  .config-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-    margin-top: 24px;
-  }
-  
-  .save-btn {
-    background: #22c55e;
-    color: #0b1220;
-    border: 0;
-    border-radius: 8px;
-    padding: 12px 24px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  
-  .reset-btn {
-    background: #ef4444;
-    color: white;
-    border: 0;
-    border-radius: 8px;
-    padding: 12px 24px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-</style>
 </html>
-

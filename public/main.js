@@ -1,6 +1,19 @@
 // Global state
 let sessionId = crypto.randomUUID();
 let currentSection = 'chat';
+let currentXP = 0;
+let currentLevel = 0;
+
+// XP System
+const XP_LEVELS = [
+  { level: 0, label: 'Diagnóstico', xp: 0 },
+  { level: 1, label: 'Iniciante', xp: 50 },
+  { level: 2, label: 'Aprendiz', xp: 100 },
+  { level: 3, label: 'Intermediário', xp: 150 },
+  { level: 4, label: 'Avançado', xp: 200 },
+  { level: 5, label: 'Especialista', xp: 250 },
+  { level: 6, label: 'Mestre', xp: 300 }
+];
 
 // DOM elements
 const messagesEl = document.getElementById('messages');
@@ -34,10 +47,88 @@ function showSection(section) {
   currentSection = section;
   
   // Load section-specific data
-  if (section === 'health') {
+  if (section === 'admin') {
     checkHealth();
+  } else if (section === 'missions') {
+    loadMissions();
+  } else if (section === 'profile') {
+    loadProfile();
   }
 }
+
+// XP System Functions
+function updateXP(points) {
+  currentXP += points;
+  updateXPDisplay();
+  checkLevelUp();
+}
+
+function updateXPDisplay() {
+  const level = getCurrentLevel();
+  const progress = (currentXP / 300) * 100;
+  
+  // Update sidebar
+  document.getElementById('sidebar-xp').textContent = currentXP;
+  
+  // Update chat header
+  document.getElementById('xp-current').textContent = currentXP;
+  document.getElementById('xp-level').textContent = level.level;
+  document.getElementById('xp-label').textContent = level.label;
+  document.getElementById('xp-fill').style.width = `${progress}%`;
+  
+  // Update profile
+  document.getElementById('profile-xp').textContent = currentXP;
+  document.getElementById('profile-level').textContent = level.level;
+  document.getElementById('profile-label').textContent = level.label;
+  
+  const nextLevel = XP_LEVELS.find(l => l.level === level.level + 1);
+  if (nextLevel) {
+    document.getElementById('profile-next').textContent = nextLevel.xp - currentXP;
+  }
+}
+
+function getCurrentLevel() {
+  for (let i = XP_LEVELS.length - 1; i >= 0; i--) {
+    if (currentXP >= XP_LEVELS[i].xp) {
+      return XP_LEVELS[i];
+    }
+  }
+  return XP_LEVELS[0];
+}
+
+function checkLevelUp() {
+  const currentLevel = getCurrentLevel();
+  if (currentLevel.level > this.currentLevel) {
+    this.currentLevel = currentLevel.level;
+    showLevelUpNotification(currentLevel);
+  }
+}
+
+function showLevelUpNotification(level) {
+  const notification = document.createElement('div');
+  notification.className = 'level-up-notification';
+  notification.innerHTML = `
+    <div class="notification-content">
+      <h3>🎉 Level Up!</h3>
+      <p>Você alcançou o nível ${level.level}: ${level.label}</p>
+    </div>
+  `;
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
+// Tutor Selection
+document.querySelectorAll('[data-select-agent]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const agentId = e.target.getAttribute('data-select-agent');
+    agentSelect.value = agentId;
+    showSection('chat');
+    addMessage(`Tutor ${agentId} selecionado! Como posso te ajudar?`);
+  });
+});
 
 // Chat functions
 function addMessage(text, who = 'bot') {
@@ -61,8 +152,13 @@ async function sendMessage(text) {
     const data = await res.json();
 
     messagesEl.lastChild.remove(); // remove "Digitando..."
-    if (data.reply) addMessage(data.reply, 'bot');
-    else addMessage('Erro: resposta vazia', 'bot');
+    if (data.reply) {
+      addMessage(data.reply, 'bot');
+      // Award XP for interaction
+      updateXP(5);
+    } else {
+      addMessage('Erro: resposta vazia', 'bot');
+    }
   } catch (e) {
     messagesEl.lastChild.remove();
     addMessage('Erro ao conectar com o servidor.', 'bot');
@@ -85,11 +181,14 @@ quickReplies.addEventListener('click', (e) => {
   sendMessage(t);
 });
 
-// Agent testing
-async function testAgent(agentId) {
-  const testMessage = `Teste do agente ${agentId}: "Olá, como você pode me ajudar?"`;
-  await sendMessage(testMessage);
-}
+// Practice and Review buttons
+document.getElementById('practice-btn')?.addEventListener('click', () => {
+  sendMessage('Quero praticar agora! Me dê um exercício.');
+});
+
+document.getElementById('review-btn')?.addEventListener('click', () => {
+  sendMessage('Quero revisar o que aprendi. Me faça perguntas sobre os tópicos estudados.');
+});
 
 // RAG search
 async function searchRAG() {
@@ -172,23 +271,72 @@ async function checkHealth() {
   }
 }
 
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-  // Initial message
-  addMessage('Olá! Eu sou seu Mentor Virtual. Como posso te ajudar hoje?\n\n- [Quero criar um plano de estudos]\n- [Preciso de ajuda com um conceito específico]\n- [Estou buscando novas habilidades para minha carreira]');
+// Missions and Profile functions
+function loadMissions() {
+  const missionList = document.getElementById('mission-list');
+  const xpHistory = document.getElementById('xp-history');
   
-  // Check API status on load
-  checkAPI();
+  // Mock missions
+  const missions = [
+    { title: 'Complete seu diagnóstico inicial', xp: 10, completed: false },
+    { title: 'Estude 3 tópicos diferentes', xp: 15, completed: false },
+    { title: 'Pratique com 5 exercícios', xp: 20, completed: false },
+    { title: 'Alcance 100 XP', xp: 25, completed: currentXP >= 100 }
+  ];
   
-  // Temperature slider
-  const tempSlider = document.getElementById('config-temperature');
-  const tempValue = document.getElementById('temp-value');
-  if (tempSlider && tempValue) {
-    tempSlider.addEventListener('input', (e) => {
-      tempValue.textContent = e.target.value;
-    });
-  }
-});
+  missionList.innerHTML = missions.map(mission => `
+    <li class="${mission.completed ? 'completed' : ''}">
+      <strong>${mission.title}</strong>
+      <span class="xp-reward">+${mission.xp} XP</span>
+    </li>
+  `).join('');
+  
+  // Mock XP history
+  const history = [
+    { date: 'Hoje', action: 'Interação com tutor', xp: 5 },
+    { date: 'Ontem', action: 'Exercício completado', xp: 10 },
+    { date: '2 dias atrás', action: 'Diagnóstico inicial', xp: 15 }
+  ];
+  
+  xpHistory.innerHTML = history.map(entry => `
+    <li>
+      <span class="date">${entry.date}</span>
+      <span class="action">${entry.action}</span>
+      <span class="xp">+${entry.xp} XP</span>
+    </li>
+  `).join('');
+}
+
+function loadProfile() {
+  const badges = document.getElementById('profile-badges');
+  const gaps = document.getElementById('profile-gaps');
+  
+  // Mock badges
+  const userBadges = [
+    { name: 'Primeiro Passo', icon: '🎯', earned: true },
+    { name: 'Curioso', icon: '🤔', earned: true },
+    { name: 'Persistente', icon: '💪', earned: currentXP >= 50 },
+    { name: 'Especialista', icon: '🏆', earned: currentXP >= 200 }
+  ];
+  
+  badges.innerHTML = userBadges.map(badge => `
+    <li class="${badge.earned ? 'earned' : 'locked'}">
+      ${badge.icon} ${badge.name}
+    </li>
+  `).join('');
+  
+  // Mock gaps
+  const detectedGaps = [
+    'Fundamentos de HTML semântico',
+    'Responsividade em CSS',
+    'JavaScript ES6+',
+    'Testes automatizados'
+  ];
+  
+  gaps.innerHTML = detectedGaps.map(gap => `
+    <li>${gap}</li>
+  `).join('');
+}
 
 // Save API key from UI
 async function saveAPIKey() {
@@ -311,4 +459,84 @@ function resetAgentConfig() {
   }
 }
 
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  // Initial message
+  addMessage('Olá! Eu sou seu Mentor Virtual Manduvi. Vamos começar sua jornada de aprendizado!\n\n🎯 Escolha uma opção:\n- [Quero meu diagnóstico inicial]\n- [Me ensine um tópico com exemplo]\n- [Praticar agora]');
+  
+  // Check API status on load
+  checkAPI();
+  
+  // Initialize XP display
+  updateXPDisplay();
+  
+  // Temperature slider
+  const tempSlider = document.getElementById('config-temperature');
+  const tempValue = document.getElementById('temp-value');
+  if (tempSlider && tempValue) {
+    tempSlider.addEventListener('input', (e) => {
+      tempValue.textContent = e.target.value;
+    });
+  }
+});
 
+// Add CSS for level up notification
+const style = document.createElement('style');
+style.textContent = `
+  .level-up-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(34, 197, 94, 0.3);
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+  }
+  
+  .notification-content h3 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+  }
+  
+  .notification-content p {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.9;
+  }
+  
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  .mission-list li.completed {
+    opacity: 0.6;
+    text-decoration: line-through;
+  }
+  
+  .xp-reward {
+    color: #22c55e;
+    font-weight: 600;
+    float: right;
+  }
+  
+  .badge-list li.earned {
+    background: #22c55e;
+    color: white;
+  }
+  
+  .badge-list li.locked {
+    background: #374151;
+    color: #9ca3af;
+  }
+`;
+document.head.appendChild(style);
