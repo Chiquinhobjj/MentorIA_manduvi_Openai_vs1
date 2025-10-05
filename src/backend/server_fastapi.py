@@ -30,7 +30,6 @@ app.add_middleware(
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PUBLIC_DIR = REPO_ROOT / "public"
 PUBLIC_DIR.mkdir(exist_ok=True)
-app.mount("/", StaticFiles(directory=str(PUBLIC_DIR), html=True), name="public")
 
 
 def get_agent(agent_id: Optional[str]) -> Agent:
@@ -167,5 +166,9 @@ def update_agent_config_endpoint(req: AgentConfigRequest):
         return {"ok": True, "config": config}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Mount static files AFTER all API routes are defined
+app.mount("/", StaticFiles(directory=str(PUBLIC_DIR), html=True), name="public")
 
 
